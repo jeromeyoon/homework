@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#3DAD7A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>기찬의 숙제</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN: Home
+       Native equiv → HomeScreen (RN) / HomeWidget (Flutter)
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+
+    <!-- Hero banner -->
+    <div class="hero" id="hero">
+      <div class="hero-blob hero-blob-1"></div>
+      <div class="hero-blob hero-blob-2"></div>
+      <div class="hero-content">
+        <p class="hero-greeting" id="hero-greeting">안녕! 👋</p>
+        <h1 class="hero-date" id="hero-date"></h1>
+        <p class="hero-stat" id="hero-stat"></p>
+      </div>
+    </div>
+
+    <!-- White panel slides up -->
+    <div class="panel">
+      <!-- Subject cards -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">과목</h2>
+        </div>
+        <div id="home-subject-cards" class="subject-cards"></div>
+      </section>
+
+      <!-- Progress -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">진행상황</h2>
+          <span class="progress-fraction" id="progress-fraction"></span>
+        </div>
+        <!-- Overall bar -->
+        <div class="progress-overall">
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+          <span class="progress-pct" id="progress-pct"></span>
+        </div>
+        <!-- Per-subject rows -->
+        <div id="progress-subjects" class="progress-subjects"></div>
+      </section>
+
+      <!-- Timeline -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">숙제 현황</h2>
+        </div>
+        <div id="home-timeline" class="timeline"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN: Schedule (full timeline)
+       Native equiv → ScheduleScreen / ScheduleWidget
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-schedule" class="screen">
+
+    <div class="screen-header">
+      <h2 class="screen-title">전체 숙제</h2>
+      <button class="btn-icon" onclick="App.toggleFilterBar()" aria-label="필터">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/>
+          <line x1="11" y1="18" x2="13" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Week date strip -->
+    <div id="week-strip" class="week-strip"></div>
+
+    <!-- Filter chips -->
+    <div id="filter-bar" class="filter-bar hidden">
+      <button class="filter-chip active" data-filter="all"  onclick="App.setFilter('all')">전체</button>
+      <button class="filter-chip"        data-filter="todo" onclick="App.setFilter('todo')">미완료</button>
+      <button class="filter-chip"        data-filter="done" onclick="App.setFilter('done')">완료</button>
+    </div>
+
+    <div id="schedule-timeline" class="timeline scrollable"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN: Add / Edit homework
+       Native equiv → AddHomeworkScreen / BottomSheet
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-add" class="screen">
+
+    <div class="screen-header">
+      <button class="btn-back" onclick="App.closeAdd()" aria-label="닫기">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <h2 class="screen-title" id="add-screen-title">숙제 추가</h2>
+      <div style="width:32px"></div>
+    </div>
+
+    <div class="add-form" id="add-form">
+
+      <div class="form-group">
+        <label class="form-label">과목</label>
+        <div id="subject-picker" class="picker-row"></div>
+      </div>
+
+      <div class="form-group hidden" id="subtype-group">
+        <label class="form-label">세부 유형</label>
+        <div id="subtype-picker" class="picker-row"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">진행 방식 <span class="form-label-opt">(선택)</span></label>
+        <div class="picker-row" id="progress-type-picker">
+          <button class="picker-chip selected" data-ptype="none"  onclick="App.selectProgressType('none')">없음</button>
+          <button class="picker-chip"          data-ptype="count" onclick="App.selectProgressType('count')">횟수</button>
+          <button class="picker-chip"          data-ptype="page"  onclick="App.selectProgressType('page')">페이지</button>
+        </div>
+      </div>
+
+      <!-- 횟수 설정 -->
+      <div class="form-group hidden" id="progress-count-group">
+        <label class="form-label">목표 횟수</label>
+        <div class="progress-input-row">
+          <input type="number" id="progress-target-count" class="form-input num-input"
+                 placeholder="예: 10" min="1">
+          <span class="form-unit">번</span>
+        </div>
+      </div>
+
+      <!-- 페이지 설정 -->
+      <div class="form-group hidden" id="progress-page-group">
+        <label class="form-label">페이지 범위</label>
+        <div class="progress-input-row">
+          <input type="number" id="progress-start-page" class="form-input num-input"
+                 placeholder="시작" min="1">
+          <span class="form-unit">~</span>
+          <input type="number" id="progress-target-page" class="form-input num-input"
+                 placeholder="목표" min="1">
+          <span class="form-unit">페이지</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">메모 <span class="form-label-opt">(선택)</span></label>
+        <textarea id="add-detail" class="form-input" placeholder="예: p.30~35 읽기" rows="2"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">마감일</label>
+        <input type="date" id="add-due" class="form-input">
+      </div>
+
+      <div class="form-actions">
+        <button class="btn-primary" onclick="App.saveHomework()">저장하기</button>
+        <button class="btn-danger hidden" id="btn-delete" onclick="App.deleteHomework()">삭제하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       SCREEN: Subject management
+       Native equiv → SubjectsScreen / SubjectsWidget
+  ══════════════════════════════════════════════════════ -->
+  <div id="screen-subjects" class="screen">
+
+    <div class="screen-header">
+      <h2 class="screen-title">과목 관리</h2>
+      <div style="width:32px"></div>
+    </div>
+
+    <div id="subjects-list" class="subjects-list"></div>
+
+    <!-- New subject form (sticky bottom) -->
+    <div class="new-subject-form">
+      <p class="form-label" style="margin-bottom:12px">새 과목 추가</p>
+
+      <div class="new-subject-row">
+        <input type="text" id="new-subject-icon" class="form-input icon-input"
+               placeholder="🎨" maxlength="2">
+        <input type="text" id="new-subject-name" class="form-input name-input"
+               placeholder="과목 이름">
+      </div>
+
+      <div id="color-palette" class="color-palette"></div>
+
+      <button class="btn-primary" onclick="App.saveSubject()">추가하기</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       Bottom Navigation
+       Native equiv → BottomNavigationBar (Flutter)
+                     Tab.Navigator (React Navigation)
+  ══════════════════════════════════════════════════════ -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="nav-btn active" data-screen="home" onclick="App.navigate('home')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+        <path d="M9 21V12h6v9"/>
+      </svg>
+      <span class="nav-label">홈</span>
+    </button>
+
+    <button class="nav-btn" data-screen="schedule" onclick="App.navigate('schedule')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <span class="nav-label">스케줄</span>
+    </button>
+
+    <!-- FAB: Add -->
+    <button class="nav-fab" onclick="App.openAdd()" aria-label="숙제 추가">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+
+    <button class="nav-btn" data-screen="subjects" onclick="App.navigate('subjects')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+      </svg>
+      <span class="nav-label">과목</span>
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════
+       Progress update bottom sheet
+  ══════════════════════════════════════════════════════ -->
+  <div id="sheet-backdrop" class="sheet-backdrop hidden" onclick="App.closeSheet()"></div>
+
+  <div id="progress-sheet" class="progress-sheet hidden">
+    <div class="sheet-handle"></div>
+    <p class="sheet-subject" id="sheet-subject"></p>
+
+    <!-- Main stepper row -->
+    <div class="sheet-stepper">
+      <button class="sheet-step-btn" onclick="App.sheetStep(-1)">−</button>
+      <div class="sheet-value-wrap">
+        <input type="number" id="sheet-value" class="sheet-value-input" inputmode="numeric">
+        <span class="sheet-unit" id="sheet-unit"></span>
+      </div>
+      <button class="sheet-step-btn sheet-step-plus" onclick="App.sheetStep(+1)">+</button>
+    </div>
+
+    <!-- Quick-add buttons (for page type) -->
+    <div id="sheet-quick" class="sheet-quick hidden">
+      <button class="sheet-quick-btn" onclick="App.sheetStep(+5)">+5</button>
+      <button class="sheet-quick-btn" onclick="App.sheetStep(+10)">+10</button>
+      <button class="sheet-quick-btn" onclick="App.sheetStep(+20)">+20</button>
+    </div>
+
+    <!-- Mini progress bar inside sheet -->
+    <div class="sheet-progress-wrap">
+      <div class="sheet-progress-track">
+        <div class="sheet-progress-fill" id="sheet-progress-fill"></div>
+      </div>
+      <span class="sheet-progress-pct" id="sheet-progress-pct"></span>
+    </div>
+    <p class="sheet-progress-detail" id="sheet-progress-detail"></p>
+
+    <button class="btn-primary sheet-confirm" onclick="App.confirmSheet()">저장하기</button>
+  </div>
+
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
