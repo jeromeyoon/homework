@@ -77,10 +77,8 @@ const SubjectDB = (() => {
     _save(list);
   }
 
-  // builtIn subjects cannot be removed
   function remove(id) {
-    const list = getAll().filter(s => !(s.id === id && !s.builtIn));
-    _save(list);
+    _save(getAll().filter(s => s.id !== id));
   }
 
   // Fetch remote custom subjects and add any that don't exist locally
