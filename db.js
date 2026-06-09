@@ -81,6 +81,10 @@ const SubjectDB = (() => {
     _save(getAll().filter(s => s.id !== id));
   }
 
+  function updateSubTypes(id, subTypes) {
+    _save(getAll().map(s => s.id === id ? { ...s, subTypes } : s));
+  }
+
   // Fetch remote custom subjects and add any that don't exist locally
   async function syncFromGitHub() {
     try {
@@ -101,7 +105,7 @@ const SubjectDB = (() => {
     } catch (_) { /* offline or no data file yet */ }
   }
 
-  return { getAll, getById, add, remove, syncFromGitHub };
+  return { getAll, getById, add, remove, updateSubTypes, syncFromGitHub };
 })();
 
 // ── HomeworkDB ───────────────────────────────────────────────────────────────

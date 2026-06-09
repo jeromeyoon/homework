@@ -21,6 +21,7 @@ const App = (() => {
     selProgressType: 'none',   // 'none' | 'count' | 'page'
     filter: 'all',
     doneOpen: false,
+    expandedSubjectId: null,
   };
 
   // ── Sheet state ───────────────────────────────────────────────────────────
@@ -705,23 +706,79 @@ const App = (() => {
 
   function renderSubjects() {
     const subjects = SubjectDB.getAll();
-    $('subjects-list').innerHTML = subjects.map(s => `
-      <div class="subject-row">
-        <div class="subject-row-icon"
-             style="background: linear-gradient(135deg, ${esc(s.color)}, ${esc(s.color2 || s.color)})">
-          ${esc(s.icon || '📚')}
-        </div>
-        <span class="subject-row-name">${esc(s.label)}</span>
-        <button class="btn-del-subject" onclick="App.removeSubject('${esc(s.id)}')" aria-label="삭제">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
-            <path d="M10 11v6M14 11v6"/>
-          </svg>
-        </button>
-      </div>`).join('');
+    $('subjects-list').innerHTML = subjects.map(s => {
+      const expanded = state.expandedSubjectId === s.id;
+      const subTypes = s.subTypes || [];
+      const chipsHTML = subTypes.length > 0
+        ? subTypes.map(st => `
+            <span class="subtype-chip">
+              ${esc(st)}
+              <button class="subtype-chip-del"
+                      onclick="App.removeSubType('${esc(s.id)}', '${esc(st)}')"
+                      aria-label="삭제">×</button>
+            </span>`).join('')
+        : `<span class="subtype-empty">세부항목 없음</span>`;
+
+      return `
+        <div class="subject-row-wrap">
+          <div class="subject-row">
+            <div class="subject-row-icon"
+                 style="background: linear-gradient(135deg, ${esc(s.color)}, ${esc(s.color2 || s.color)})">
+              ${esc(s.icon || '📚')}
+            </div>
+            <span class="subject-row-name">${esc(s.label)}</span>
+            <button class="btn-expand-subject ${expanded ? 'open' : ''}"
+                    onclick="App.toggleSubjectExpand('${esc(s.id)}')" aria-label="세부항목 편집">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <button class="btn-del-subject" onclick="App.removeSubject('${esc(s.id)}')" aria-label="삭제">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/>
+              </svg>
+            </button>
+          </div>
+          ${expanded ? `
+            <div class="subtype-editor">
+              <div class="subtype-chips">${chipsHTML}</div>
+              <div class="subtype-add-row">
+                <input type="text" id="subtype-input-${esc(s.id)}"
+                       class="form-input subtype-input" placeholder="새 세부항목" maxlength="20"
+                       onkeydown="if(event.key==='Enter') App.addSubType('${esc(s.id)}')">
+                <button class="btn-subtype-add" onclick="App.addSubType('${esc(s.id)}')">추가</button>
+              </div>
+            </div>` : ''}
+        </div>`;
+    }).join('');
 
     _renderColorPalette();
+  }
+
+  function toggleSubjectExpand(id) {
+    state.expandedSubjectId = state.expandedSubjectId === id ? null : id;
+    renderSubjects();
+  }
+
+  function addSubType(id) {
+    const input = $('subtype-input-' + id);
+    const val = input ? input.value.trim() : '';
+    if (!val) return;
+    const s = SubjectDB.getById(id);
+    if (!s) return;
+    const existing = s.subTypes || [];
+    if (existing.includes(val)) { alert('이미 있는 항목이에요.'); return; }
+    SubjectDB.updateSubTypes(id, [...existing, val]);
+    renderSubjects();
+  }
+
+  function removeSubType(id, st) {
+    const s = SubjectDB.getById(id);
+    if (!s) return;
+    SubjectDB.updateSubTypes(id, (s.subTypes || []).filter(t => t !== st));
+    renderSubjects();
   }
 
   function _renderColorPalette() {
@@ -801,5 +858,6 @@ const App = (() => {
     toggleFilterBar, setFilter,
     toggleDoneSection, toggleItem,
     renderSubjects, saveSubject, removeSubject, selectColor,
+    toggleSubjectExpand, addSubType, removeSubType,
   };
 })();
