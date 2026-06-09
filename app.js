@@ -341,12 +341,15 @@ const App = (() => {
     const overdueClass = (isOverdue && !h.done) ? ' overdue' : '';
     const doneClass    = h.done ? ' done' : '';
     const checkedClass = h.done ? ' checked' : '';
+    const hasProgress  = h.progressType && h.progressType !== 'none';
+    const tapAction    = hasProgress
+      ? `App.openSheet(${h.id})`
+      : `App.toggleItem(${h.id})`;
 
-    // Build inline progress section
     const progressHTML = _hwProgressHTML(h, subject.color);
 
     return `
-      <button class="hw-card${doneClass}${overdueClass}" onclick="App.openEdit(${h.id})">
+      <div class="hw-card${doneClass}${overdueClass}" onclick="${tapAction}">
         <div class="hw-dot" style="background:${esc(subject.color)}"></div>
         <div class="hw-body">
           <div class="hw-title">${esc(titleLabel)}</div>
@@ -354,12 +357,20 @@ const App = (() => {
           ${progressHTML}
           <div class="hw-due">📅 ${formatDateLabel(h.dueDate)}</div>
         </div>
-        <button class="btn-done${checkedClass}"
-                onclick="event.stopPropagation(); App.toggleItem(${h.id})"
-                aria-label="${h.done ? '완료 취소' : '완료 표시'}">
-          ${CHECK_SVG}
-        </button>
-      </button>`;
+        <div class="hw-card-actions">
+          <button class="btn-edit-hw" onclick="event.stopPropagation(); App.openEdit(${h.id})" aria-label="수정">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="btn-done${checkedClass}"
+                  onclick="event.stopPropagation(); App.toggleItem(${h.id})"
+                  aria-label="${h.done ? '완료 취소' : '완료 표시'}">
+            ${CHECK_SVG}
+          </button>
+        </div>
+      </div>`;
   }
 
   function _hwProgressHTML(h, color) {
@@ -376,16 +387,11 @@ const App = (() => {
       : (complete ? '✓ 완료!' : `p.${cur} / p.${tgt}`);
 
     return `
-      <div class="hw-progress" onclick="event.stopPropagation()">
+      <div class="hw-progress">
         <div class="hw-progress-track">
           <div class="hw-progress-bar" style="width:${pct}%; background:${esc(color)}"></div>
         </div>
-        <div class="hw-progress-info">
-          <span class="hw-progress-label ${complete ? 'complete' : ''}">${label}</span>
-          ${!complete
-            ? `<button class="hw-update-btn" onclick="App.openSheet(${h.id})">업데이트</button>`
-            : ''}
-        </div>
+        <span class="hw-progress-label ${complete ? 'complete' : ''}">${label}</span>
       </div>`;
   }
 
