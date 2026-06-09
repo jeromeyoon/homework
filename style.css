@@ -529,6 +529,21 @@ input, textarea { font-family: inherit; }
 }
 .hw-step-btn:active { background: #E0E0E0; }
 
+.hw-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--clr-text-2);
+  padding: 0 5px;
+  min-width: 58px;
+  text-align: center;
+  line-height: 26px;
+}
+
+.hw-quick-btns {
+  display: flex;
+  gap: 4px;
+}
+
 /* Page update button */
 .hw-update-btn {
   font-size: 11px;

@@ -379,20 +379,56 @@ const App = (() => {
     const ratio    = _itemRatio(h);
     const pct      = Math.round(ratio * 100);
     const complete = ratio >= 1;
+    const cur      = h.progressCurrent || h.progressStart || 0;
+    const tgt      = h.progressTarget  || 0;
 
-    const cur   = h.progressCurrent || h.progressStart || 0;
-    const tgt   = h.progressTarget  || 0;
-    const label = h.progressType === 'count'
-      ? (complete ? '✓ 완료!' : `${cur} / ${tgt}번`)
-      : (complete ? '✓ 완료!' : `p.${cur} / p.${tgt}`);
+    // Completed: just show bar + done label, no buttons
+    if (complete || h.done) {
+      return `
+        <div class="hw-progress">
+          <div class="hw-progress-track">
+            <div class="hw-progress-bar" style="width:100%; background:${esc(color)}"></div>
+          </div>
+          <span class="hw-progress-label complete">✓ 완료!</span>
+        </div>`;
+    }
 
-    return `
-      <div class="hw-progress">
-        <div class="hw-progress-track">
-          <div class="hw-progress-bar" style="width:${pct}%; background:${esc(color)}"></div>
-        </div>
-        <span class="hw-progress-label ${complete ? 'complete' : ''}">${label}</span>
-      </div>`;
+    // Count type: inline − / + stepper
+    if (h.progressType === 'count') {
+      return `
+        <div class="hw-progress">
+          <div class="hw-progress-track">
+            <div class="hw-progress-bar" style="width:${pct}%; background:${esc(color)}"></div>
+          </div>
+          <div class="hw-progress-info">
+            <div class="hw-stepper" onclick="event.stopPropagation()">
+              <button class="hw-step-btn" onclick="App.stepProgress(${h.id}, -1)">−</button>
+              <span class="hw-step-label">${cur} / ${tgt}번</span>
+              <button class="hw-step-btn" onclick="App.stepProgress(${h.id}, +1)">+</button>
+            </div>
+            <span class="hw-progress-label">${pct}%</span>
+          </div>
+        </div>`;
+    }
+
+    // Page type: +1 / +5 quick buttons
+    if (h.progressType === 'page') {
+      return `
+        <div class="hw-progress">
+          <div class="hw-progress-track">
+            <div class="hw-progress-bar" style="width:${pct}%; background:${esc(color)}"></div>
+          </div>
+          <div class="hw-progress-info">
+            <span class="hw-progress-label">p.${cur} / p.${tgt}</span>
+            <div class="hw-quick-btns" onclick="event.stopPropagation()">
+              <button class="hw-update-btn" onclick="App.stepProgress(${h.id}, +1)">+1</button>
+              <button class="hw-update-btn" onclick="App.stepProgress(${h.id}, +5)">+5</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    return '';
   }
 
   // ── Progress bottom sheet ─────────────────────────────────────────────────
@@ -458,6 +494,11 @@ const App = (() => {
     if (!isNaN(typed)) sheet.value = typed;
     HomeworkDB.setProgress(sheet.id, sheet.value);
     closeSheet();
+    _refreshCurrentScreen();
+  }
+
+  function stepProgress(id, delta) {
+    HomeworkDB.stepProgress(id, delta);
     _refreshCurrentScreen();
   }
 
@@ -759,7 +800,7 @@ const App = (() => {
     saveHomework, deleteHomework,
     selectSubject, selectSubType,
     selectProgressType,
-    openSheet, sheetStep, closeSheet, confirmSheet,
+    openSheet, sheetStep, closeSheet, confirmSheet, stepProgress,
     toggleFilterBar, setFilter,
     toggleDoneSection, toggleItem,
     renderSubjects, saveSubject, removeSubject, selectColor,
