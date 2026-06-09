@@ -7,6 +7,16 @@
  *   Each DB object → a Repository class with async methods
  */
 
+// ── Firebase sync helpers ────────────────────────────────────────────────────
+
+function _getFire() { return window._hwFirestore || null; }
+
+function _pushToFire(docName, list) {
+  const fire = _getFire();
+  if (!fire) return;
+  fire.collection('hw').doc(docName).set({ list }).catch(() => {});
+}
+
 // ── Default subjects ─────────────────────────────────────────────────────────
 
 const DEFAULT_SUBJECTS = [
@@ -75,14 +85,19 @@ const SubjectDB = (() => {
     const list = getAll();
     list.push(subject);
     _save(list);
+    _pushToFire('subjects', list);
   }
 
   function remove(id) {
-    _save(getAll().filter(s => s.id !== id));
+    const list = getAll().filter(s => s.id !== id);
+    _save(list);
+    _pushToFire('subjects', list);
   }
 
   function updateSubTypes(id, subTypes) {
-    _save(getAll().map(s => s.id === id ? { ...s, subTypes } : s));
+    const list = getAll().map(s => s.id === id ? { ...s, subTypes } : s);
+    _save(list);
+    _pushToFire('subjects', list);
   }
 
   // Fetch remote custom subjects and add any that don't exist locally
@@ -105,7 +120,20 @@ const SubjectDB = (() => {
     } catch (_) { /* offline or no data file yet */ }
   }
 
-  return { getAll, getById, add, remove, updateSubTypes, syncFromGitHub };
+  async function syncFromFirestore() {
+    const fire = _getFire();
+    if (!fire) return syncFromGitHub();
+    try {
+      const snap = await fire.collection('hw').doc('subjects').get();
+      if (snap.exists && snap.data().list && snap.data().list.length > 0) {
+        _save(snap.data().list);
+        return;
+      }
+    } catch (_) {}
+    return syncFromGitHub();
+  }
+
+  return { getAll, getById, add, remove, updateSubTypes, syncFromGitHub, syncFromFirestore };
 })();
 
 // ── HomeworkDB ───────────────────────────────────────────────────────────────
@@ -139,50 +167,62 @@ const HomeworkDB = (() => {
       detail: item.detail || '',
       dueDate: item.dueDate,
       done: false,
-      // progress tracking (null = binary done/not-done)
-      progressType:    item.progressType    || null,   // 'count' | 'page' | null
+      progressType:    item.progressType    || null,
       progressTarget:  Number(item.progressTarget) || 0,
       progressStart:   start,
       progressCurrent: start,
       createdAt: _todayStr(),
     });
     _save(list);
+    _pushToFire('items', list);
   }
 
   function update(id, changes) {
-    _save(getAll().map(h => h.id === id ? { ...h, ...changes } : h));
+    const list = getAll().map(h => h.id === id ? { ...h, ...changes } : h);
+    _save(list);
+    _pushToFire('items', list);
   }
 
   function toggle(id) {
-    _save(getAll().map(h => h.id === id ? { ...h, done: !h.done } : h));
+    const list = getAll().map(h => h.id === id ? { ...h, done: !h.done } : h);
+    _save(list);
+    _pushToFire('items', list);
   }
 
   // Increment / decrement progressCurrent; auto-complete when target reached
   function stepProgress(id, delta) {
-    _save(getAll().map(h => {
+    const list = getAll().map(h => {
       if (h.id !== id) return h;
       const next = Math.max(h.progressStart || 0,
                    Math.min(h.progressTarget, (h.progressCurrent || 0) + delta));
       return { ...h, progressCurrent: next, done: next >= h.progressTarget };
-    }));
+    });
+    _save(list);
+    _pushToFire('items', list);
   }
 
   // Set progressCurrent to an arbitrary value
   function setProgress(id, value) {
-    _save(getAll().map(h => {
+    const list = getAll().map(h => {
       if (h.id !== id) return h;
       const clamped = Math.max(h.progressStart || 0,
                       Math.min(h.progressTarget, Number(value) || 0));
       return { ...h, progressCurrent: clamped, done: clamped >= h.progressTarget };
-    }));
+    });
+    _save(list);
+    _pushToFire('items', list);
   }
 
   function remove(id) {
-    _save(getAll().filter(h => h.id !== id));
+    const list = getAll().filter(h => h.id !== id);
+    _save(list);
+    _pushToFire('items', list);
   }
 
   function removeBySubjectId(subjectId) {
-    _save(getAll().filter(h => h.subjectId !== subjectId));
+    const list = getAll().filter(h => h.subjectId !== subjectId);
+    _save(list);
+    _pushToFire('items', list);
   }
 
   // Fetch remote homework items and add any that don't exist locally
@@ -205,5 +245,18 @@ const HomeworkDB = (() => {
     } catch (_) { /* offline or no data file yet */ }
   }
 
-  return { getAll, add, update, toggle, stepProgress, setProgress, remove, removeBySubjectId, syncFromGitHub };
+  async function syncFromFirestore() {
+    const fire = _getFire();
+    if (!fire) return syncFromGitHub();
+    try {
+      const snap = await fire.collection('hw').doc('items').get();
+      if (snap.exists && snap.data().list && snap.data().list.length > 0) {
+        _save(snap.data().list);
+        return;
+      }
+    } catch (_) {}
+    return syncFromGitHub();
+  }
+
+  return { getAll, add, update, toggle, stepProgress, setProgress, remove, removeBySubjectId, syncFromGitHub, syncFromFirestore };
 })();

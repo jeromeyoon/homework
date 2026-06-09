@@ -285,6 +285,19 @@
     <button class="btn-primary sheet-confirm" onclick="App.confirmSheet()">저장하기</button>
   </div>
 
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    if (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.projectId) {
+      try {
+        firebase.initializeApp(window.FIREBASE_CONFIG);
+        window._hwFirestore = firebase.firestore();
+      } catch(e) { console.warn('Firebase init failed:', e); }
+    }
+  </script>
+
   <script src="db.js"></script>
   <script src="app.js"></script>
   <script>

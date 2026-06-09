@@ -843,7 +843,7 @@ const App = (() => {
       }
     });
 
-    Promise.all([SubjectDB.syncFromGitHub(), HomeworkDB.syncFromGitHub()])
+    Promise.all([SubjectDB.syncFromFirestore(), HomeworkDB.syncFromFirestore()])
       .finally(() => navigate('home'));
   });
 
