@@ -146,13 +146,19 @@
       <!-- 페이지 설정 -->
       <div class="form-group hidden" id="progress-page-group">
         <label class="form-label">페이지 범위</label>
-        <div class="progress-input-row">
-          <input type="number" id="progress-start-page" class="form-input num-input"
-                 placeholder="시작" min="1">
-          <span class="form-unit">~</span>
-          <input type="number" id="progress-target-page" class="form-input num-input"
-                 placeholder="목표" min="1">
-          <span class="form-unit">페이지</span>
+        <div class="page-range-stack">
+          <div class="page-range-row">
+            <span class="page-range-label">시작</span>
+            <input type="number" id="progress-start-page" class="form-input page-num-input"
+                   placeholder="예: 10" min="1" inputmode="numeric">
+            <span class="form-unit">페이지</span>
+          </div>
+          <div class="page-range-row">
+            <span class="page-range-label">목표</span>
+            <input type="number" id="progress-target-page" class="form-input page-num-input"
+                   placeholder="예: 30" min="1" inputmode="numeric">
+            <span class="form-unit">페이지</span>
+          </div>
         </div>
       </div>
 
